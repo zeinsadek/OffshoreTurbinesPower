@@ -1,0 +1,42 @@
+%%% Plot all power curves together
+
+clear; close all; clc;
+
+%%
+
+%%% Inputs
+main_path = '/Volumes/Zein_PIV_3/Power_Results';
+setup     = 'WT60_SX50_AG0';
+rows      = [1,2,3,4];
+
+%%% Colors
+colors = {'#710627', '#EF6461', '#9CE37D', '#8ACDEA'};
+
+%%% Plotting Params
+marker_size = 80;
+linewidth   = 2;
+
+figure()
+hold on
+for i = 1:length(files)
+    data = load(fullfile(main_path, setup, strcat('ROW', num2str(i), '_Power_Curve.mat')));
+    data = data.output;
+
+    p = scatter(data.TS, data.P, 'MarkerFaceColor', colors{i}, );
+    p.Color(4) = 0.1;
+
+    plot(data.TS_avg, data.P_avg, 'linewidth', linewidth, 'color', colors{i}, 'HandleVisibility', 'off')
+
+    scatter(data.TS_avg, data.P_avg, marker_size, ...
+            'filled', 'MarkerFaceColor', colors{i}, 'MarkerEdgeColor', 'none', ...
+            'displayname', strcat('ROW', " ", num2str(i)))
+    
+end
+hold off
+title(setup, 'Interpreter', 'none')
+legend('location', 'northeast')
+xlabel('Tip Speed [m/s]')
+ylabel('Power [mW]')
+
+
+
