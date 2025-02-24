@@ -5,22 +5,12 @@ clear; close all; clc;
 %% Import Data
 
 clc;
-main_path     = "/Volumes/Zein_PIV_3/Zein_APS_Tracking/Power/WT60_SX50_AG0";
+main_path     = "/Users/zeinsadek/Desktop/Experiments/Offshore/Power/Data/Raw/FWF_Inline/WT60_SX30_AG0";
 caze          = "LM0_AK00";
 points        = 12000;
 turbines      = 1:12;
 
-save_path     = "/Volumes/Zein_PIV_3/Power_Results/WT60_SX50_AG0/Power_Signal";
-figure_folder = fullfile(save_path, "Figures");
-mat_folder    = fullfile(save_path, "Matfiles");
-
-if ~exist(figure_folder, "dir")
-    mkdir(figure_folder);
-end
-
-if ~exist(mat_folder, "dir")
-    mkdir(mat_folder);
-end
+save_path     = "/Users/zeinsadek/Desktop/Experiments/Offshore/Power/Data/Matfiles/FWF_Inline";
 
 
 for T = 1:length(turbines)
@@ -55,7 +45,7 @@ for T = 1:length(turbines)
 end
 
 % Save to mat file
-save(fullfile(mat_folder, caze + '.mat'), 'output')
+save(fullfile(save_path, caze + '.mat'), 'output')
 fprintf("\n%s Done Saveing\n", caze)
 
 
