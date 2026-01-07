@@ -10,7 +10,7 @@ projet_path = "/Users/zeinsadek/Desktop/Experiments/Offshore/Power";
 mat_path = fullfile(projet_path, "Data/Matfiles");
 
 % Which arangment to process
-farm_arrangement = "FBF_Inline";
+farm_arrangement = "FWF_Inline";
 steepness = "AK06";
 waves = {"2", "3", "4", "5"};
 
@@ -19,6 +19,8 @@ spacing_folders = dir(fullfile(mat_path, farm_arrangement));
 spacing_folders = spacing_folders(~ismember({spacing_folders.name},{'.','..','.DS_Store'}));
 spacings = {spacing_folders.name};
 
+% figure path
+figure_path = "/Users/zeinsadek/Desktop/Experiments/Offshore/Power/figures";
 
 
 %% Loop and save all data
@@ -108,80 +110,160 @@ clc;
 
 %% Plot Farm Average Power Vs Wavelength
 
-colors = {"#42F2F7", "#FFED65", "#38369A", "#999AC6", "#191308"};
-markerSize = 80;
-lineWidth = 3;
-fontSize = 16;
-
-ax = figure();
-hold on
-for sx = 1:length(spacings) - 1
-    spacing = spacings{sx};
-    streamwise_spacing = sxs(sx);
-    label = strcat("$S_x = ", num2str(streamwise_spacing), "D$");
-    for wv = 1:length(waves)
-        wave = waves{wv};
-        scatter(str2double(wave), powers.(spacing).(strcat("W", wave)), ...
-                markerSize, 'filled', 'MarkerEdgeColor', 'none', ...
-                'MarkerFaceColor', colors{sx}, ...
-                'HandleVisibility', 'off')
-        xAxisTemp(wv) = str2double(wave);
-        yAxisTemp(wv) = powers.(spacing).(strcat("W", wave));
-    end
-    plot(xAxisTemp, yAxisTemp, 'color', colors{sx}, 'linewidth', lineWidth, 'DisplayName', label)
-    clear xAxisTemp yAxisTemp
-end
-
-clear xAxisTemp yAxisTemp
-
-% Plot 5D wave seperate since this has extra cases
-spacing = spacings{end};
-for wv = 1:length(waves)
-    wave = waves{wv};
-    scatter(str2double(wave), powers.(spacing).(strcat("W", wave)), ...
-            markerSize, 'filled', 'MarkerEdgeColor', 'none', ...
-            'MarkerFaceColor', colors{5}, ...
-            'HandleVisibility', 'off')
-    xAxisTemp(wv) = str2double(wave);
-    yAxisTemp(wv) = powers.(spacing).(strcat("W", wave));
-end
-
-% Plot 25 wave
-scatter(2.5, powers.(spacing).("W25"), markerSize, ...
-        'filled', 'MarkerEdgeColor', 'none', ...
-        'MarkerFaceColor', colors{5}, ...
-        'HandleVisibility', 'off')
-xAxisTemp(wv + 1) = 2.5;
-yAxisTemp(wv + 1) = powers.(spacing).("W25");
-
-% Plot 33 wave
-scatter(3.3, powers.(spacing).("W33"), markerSize, ...
-        'filled', 'MarkerEdgeColor', 'none', ...
-        'MarkerFaceColor', colors{5}, ...
-        'HandleVisibility', 'off')
-xAxisTemp(wv + 2) = 3.3;
-yAxisTemp(wv + 2) = powers.(spacing).("W33");
-
-
-[xAxisTemp_sorted, xAxisTemp_order] = sort(xAxisTemp);
-yAxisTemp_sorted = yAxisTemp(:, xAxisTemp_order);
-
-plot(xAxisTemp_sorted, yAxisTemp_sorted, 'color', colors{5}, 'linewidth', lineWidth, 'DisplayName', '$S_x = 5D$')
-clear xAxisTemp yAxisTemp xAxisTemp_sorted yAxisTemp_sorted
-
-hold off
-legend('Interpreter', 'latex')
-xlim([1.5, 5.5])
-xticks([2,2.5,3,3.33,4,5])
-xlabel('$\lambda [D]$', 'interpreter', 'latex', 'FontSize', fontSize)
-ylabel('$\overline{P}$', 'interpreter', 'latex', 'FontSize', fontSize)
-grid on
-title(strcat(farm_arrangement, ": ", steepness), 'interpreter', 'none')
+% colors = {"#42F2F7", "#FFED65", "#38369A", "#999AC6", "#191308"};
+% markerSize = 80;
+% lineWidth = 3;
+% fontSize = 16;
+% 
+% ax = figure();
+% hold on
+% for sx = 1:length(spacings) - 1
+%     spacing = spacings{sx};
+%     streamwise_spacing = sxs(sx);
+%     label = strcat("$S_x = ", num2str(streamwise_spacing), "D$");
+%     for wv = 1:length(waves)
+%         wave = waves{wv};
+%         scatter(str2double(wave), powers.(spacing).(strcat("W", wave)), ...
+%                 markerSize, 'filled', 'MarkerEdgeColor', 'none', ...
+%                 'MarkerFaceColor', colors{sx}, ...
+%                 'HandleVisibility', 'off')
+%         xAxisTemp(wv) = str2double(wave);
+%         yAxisTemp(wv) = powers.(spacing).(strcat("W", wave));
+%     end
+%     plot(xAxisTemp, yAxisTemp, 'color', colors{sx}, 'linewidth', lineWidth, 'DisplayName', label)
+%     clear xAxisTemp yAxisTemp
+% end
+% 
+% clear xAxisTemp yAxisTemp
+% 
+% % Plot 5D wave seperate since this has extra cases
+% spacing = spacings{end};
+% for wv = 1:length(waves)
+%     wave = waves{wv};
+%     scatter(str2double(wave), powers.(spacing).(strcat("W", wave)), ...
+%             markerSize, 'filled', 'MarkerEdgeColor', 'none', ...
+%             'MarkerFaceColor', colors{5}, ...
+%             'HandleVisibility', 'off')
+%     xAxisTemp(wv) = str2double(wave);
+%     yAxisTemp(wv) = powers.(spacing).(strcat("W", wave));
+% end
+% 
+% % Plot 25 wave
+% scatter(2.5, powers.(spacing).("W25"), markerSize, ...
+%         'filled', 'MarkerEdgeColor', 'none', ...
+%         'MarkerFaceColor', colors{5}, ...
+%         'HandleVisibility', 'off')
+% xAxisTemp(wv + 1) = 2.5;
+% yAxisTemp(wv + 1) = powers.(spacing).("W25");
+% 
+% % Plot 33 wave
+% scatter(3.3, powers.(spacing).("W33"), markerSize, ...
+%         'filled', 'MarkerEdgeColor', 'none', ...
+%         'MarkerFaceColor', colors{5}, ...
+%         'HandleVisibility', 'off')
+% xAxisTemp(wv + 2) = 3.3;
+% yAxisTemp(wv + 2) = powers.(spacing).("W33");
+% 
+% 
+% [xAxisTemp_sorted, xAxisTemp_order] = sort(xAxisTemp);
+% yAxisTemp_sorted = yAxisTemp(:, xAxisTemp_order);
+% 
+% plot(xAxisTemp_sorted, yAxisTemp_sorted, 'color', colors{5}, 'linewidth', lineWidth, 'DisplayName', '$S_x = 5D$')
+% clear xAxisTemp yAxisTemp xAxisTemp_sorted yAxisTemp_sorted
+% 
+% hold off
+% legend('Interpreter', 'latex')
+% xlim([1.5, 5.5])
+% xticks([2,2.5,3,3.33,4,5])
+% xlabel('$\lambda [D]$', 'interpreter', 'latex', 'FontSize', fontSize)
+% ylabel('$\overline{P}$', 'interpreter', 'latex', 'FontSize', fontSize)
+% grid on
+% title(strcat(farm_arrangement, ": ", steepness), 'interpreter', 'none')
 
 
 
 %% Plot Farm Average Power Vs Wavelength (normalized)
+% 
+% close all;
+% colors = {"#42F2F7", "#FFED65", "#38369A", "#999AC6", "#191308"};
+% markerSize = 80;
+% lineWidth = 3;
+% fontSize = 16;
+% 
+% ax = figure();
+% hold on
+% for sx = 1:length(spacings) - 1
+%     spacing = spacings{sx};
+%     streamwise_spacing = sxs(sx);
+%     label = strcat("$S_x = ", num2str(streamwise_spacing), "D$");
+%     for wv = 1:length(waves)
+%         wave = waves{wv};
+%         scatter(str2double(wave), powers.(spacing).(strcat("W", wave)) / no_wave_powers.(spacing), ...
+%                 markerSize, 'filled', 'MarkerEdgeColor', 'none', ...
+%                 'MarkerFaceColor', colors{sx}, ...
+%                 'HandleVisibility', 'off')
+%         xAxisTemp(wv) = str2double(wave);
+%         yAxisTemp(wv) = powers.(spacing).(strcat("W", wave)) / no_wave_powers.(spacing);
+%     end
+%     plot(xAxisTemp, yAxisTemp, 'color', colors{sx}, 'linewidth', lineWidth, 'DisplayName', label)
+%     clear xAxisTemp yAxisTemp
+% end
+% 
+% clear xAxisTemp yAxisTemp
+% 
+% % Plot 5D wave seperate since this has extra cases
+% spacing = spacings{end};
+% for wv = 1:length(waves)
+%     wave = waves{wv};
+%     scatter(str2double(wave), powers.(spacing).(strcat("W", wave)) / no_wave_powers.(spacing), ...
+%             markerSize, 'filled', 'MarkerEdgeColor', 'none', ...
+%             'MarkerFaceColor', colors{5}, ...
+%             'HandleVisibility', 'off')
+%     xAxisTemp(wv) = str2double(wave);
+%     yAxisTemp(wv) = powers.(spacing).(strcat("W", wave)) / no_wave_powers.(spacing);
+% end
+% 
+% % Plot 25 wave
+% scatter(2.5, powers.(spacing).("W25") / no_wave_powers.(spacing), markerSize, ...
+%         'filled', 'MarkerEdgeColor', 'none', ...
+%         'MarkerFaceColor', colors{5}, ...
+%         'HandleVisibility', 'off')
+% xAxisTemp(wv + 1) = 2.5;
+% yAxisTemp(wv + 1) = powers.(spacing).("W25") / no_wave_powers.(spacing);
+% 
+% % Plot 33 wave
+% scatter(3.3, powers.(spacing).("W33") / no_wave_powers.(spacing), markerSize, ...
+%         'filled', 'MarkerEdgeColor', 'none', ...
+%         'MarkerFaceColor', colors{5}, ...
+%         'HandleVisibility', 'off')
+% xAxisTemp(wv + 2) = 3.3;
+% yAxisTemp(wv + 2) = powers.(spacing).("W33") / no_wave_powers.(spacing);
+% 
+% 
+% [xAxisTemp_sorted, xAxisTemp_order] = sort(xAxisTemp);
+% yAxisTemp_sorted = yAxisTemp(:, xAxisTemp_order);
+% 
+% plot(xAxisTemp_sorted, yAxisTemp_sorted, 'color', colors{5}, 'linewidth', lineWidth, 'DisplayName', '$S_x = 5D$')
+% clear xAxisTemp yAxisTemp xAxisTemp_sorted yAxisTemp_sorted
+% 
+% hold off
+% legend('Interpreter', 'latex', 'location', 'southeast')
+% xticks([2,2.5,3,3.33,4,5])
+% xlabel('$\lambda [D]$', 'interpreter', 'latex', 'FontSize', fontSize)
+% ylabel('$\overline{P} / \overline{P}_{no waves}$', 'interpreter', 'latex', 'FontSize', fontSize)
+% grid on
+% title(strcat(farm_arrangement, ": ", steepness), 'interpreter', 'none')
+% % ylim([0.95, 1.05])
+% ylim([0.8, 1])
+% xlim([1.5, 5.5])
 
+% figure_name = strcat(farm_arrangement, "_", steepness, "_NormalizedPerformance_vs_Wavelength.png");
+% exportgraphics(ax, fullfile(figure_path, figure_name), 'resolution', 300);
+
+
+%% Plot Farm Average Power Vs Harmonic Parameter (normalized)
+
+close all;
 colors = {"#42F2F7", "#FFED65", "#38369A", "#999AC6", "#191308"};
 markerSize = 80;
 lineWidth = 3;
@@ -195,11 +277,11 @@ for sx = 1:length(spacings) - 1
     label = strcat("$S_x = ", num2str(streamwise_spacing), "D$");
     for wv = 1:length(waves)
         wave = waves{wv};
-        scatter(str2double(wave), powers.(spacing).(strcat("W", wave)) / no_wave_powers.(spacing), ...
+        scatter(streamwise_spacing / str2double(wave), powers.(spacing).(strcat("W", wave)) / no_wave_powers.(spacing), ...
                 markerSize, 'filled', 'MarkerEdgeColor', 'none', ...
                 'MarkerFaceColor', colors{sx}, ...
                 'HandleVisibility', 'off')
-        xAxisTemp(wv) = str2double(wave);
+        xAxisTemp(wv) = streamwise_spacing / str2double(wave);
         yAxisTemp(wv) = powers.(spacing).(strcat("W", wave)) / no_wave_powers.(spacing);
     end
     plot(xAxisTemp, yAxisTemp, 'color', colors{sx}, 'linewidth', lineWidth, 'DisplayName', label)
@@ -212,28 +294,28 @@ clear xAxisTemp yAxisTemp
 spacing = spacings{end};
 for wv = 1:length(waves)
     wave = waves{wv};
-    scatter(str2double(wave), powers.(spacing).(strcat("W", wave)) / no_wave_powers.(spacing), ...
+    scatter(5 / str2double(wave), powers.(spacing).(strcat("W", wave)) / no_wave_powers.(spacing), ...
             markerSize, 'filled', 'MarkerEdgeColor', 'none', ...
             'MarkerFaceColor', colors{5}, ...
             'HandleVisibility', 'off')
-    xAxisTemp(wv) = str2double(wave);
+    xAxisTemp(wv) = 5 / str2double(wave);
     yAxisTemp(wv) = powers.(spacing).(strcat("W", wave)) / no_wave_powers.(spacing);
 end
 
 % Plot 25 wave
-scatter(2.5, powers.(spacing).("W25") / no_wave_powers.(spacing), markerSize, ...
+scatter(5 / 2.5, powers.(spacing).("W25") / no_wave_powers.(spacing), markerSize, ...
         'filled', 'MarkerEdgeColor', 'none', ...
         'MarkerFaceColor', colors{5}, ...
         'HandleVisibility', 'off')
-xAxisTemp(wv + 1) = 2.5;
+xAxisTemp(wv + 1) = 5 / 2.5;
 yAxisTemp(wv + 1) = powers.(spacing).("W25") / no_wave_powers.(spacing);
 
 % Plot 33 wave
-scatter(3.3, powers.(spacing).("W33") / no_wave_powers.(spacing), markerSize, ...
+scatter(5 / 3.3, powers.(spacing).("W33") / no_wave_powers.(spacing), markerSize, ...
         'filled', 'MarkerEdgeColor', 'none', ...
         'MarkerFaceColor', colors{5}, ...
         'HandleVisibility', 'off')
-xAxisTemp(wv + 2) = 3.3;
+xAxisTemp(wv + 2) = 5 / 3.3;
 yAxisTemp(wv + 2) = powers.(spacing).("W33") / no_wave_powers.(spacing);
 
 
@@ -245,10 +327,14 @@ clear xAxisTemp yAxisTemp xAxisTemp_sorted yAxisTemp_sorted
 
 hold off
 legend('Interpreter', 'latex', 'location', 'southeast')
-xlim([1.5, 5.5])
-xticks([2,2.5,3,3.33,4,5])
-xlabel('$\lambda [D]$', 'interpreter', 'latex', 'FontSize', fontSize)
+xlabel('$H = S_x / \lambda$', 'interpreter', 'latex', 'FontSize', fontSize)
 ylabel('$\overline{P} / \overline{P}_{no waves}$', 'interpreter', 'latex', 'FontSize', fontSize)
 grid on
 title(strcat(farm_arrangement, ": ", steepness), 'interpreter', 'none')
-ylim([0.95, 1.05])
+% ylim([0.9, 1.1])
+ylim([0.8, 1])
+xlim([0.5, 2.5])
+
+
+figure_name = strcat(farm_arrangement, "_", steepness, "_NormalizedPerformance_vs_H.png");
+exportgraphics(ax, fullfile(figure_path, figure_name), 'resolution', 300);

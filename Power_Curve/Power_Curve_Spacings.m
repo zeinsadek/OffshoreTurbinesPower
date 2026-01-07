@@ -41,7 +41,7 @@ lineWidth = 3;
 colors = {"#42F2F7", "#FFED65", "#38369A", "#999AC6", "#191308"};
 spaces = {"3.0", "3.5", "4.0", "4.5", "5.0"};
 
-ax = figure();
+ax = figure('position', [300, 300, 1300, 500]);
 tiledlayout(1,4);
 
 for r = 1:4
@@ -60,8 +60,17 @@ for r = 1:4
     title(strcat("Row: ", num2str(r)))
     xlabel('Tip Speed [m/s]')
     ylabel('Power [mW]')
+    xlim([0, 3])
+    % ylim([0, 120])
 end
 leg = legend('Orientation', 'Horizontal');
 leg.Layout.Tile = 'north';
 leg.Interpreter = "latex";
 leg.FontSize = 18;
+leg.Box = "off";
+
+% exportgraphics(ax, fullfile("/Users/zeinsadek/Desktop/Experiments/Offshore/Power/figures", "Power_Curves_Different_Spacing_Not_Scaled.png"), 'resolution', 300)
+
+
+
+
