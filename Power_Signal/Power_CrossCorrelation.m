@@ -15,7 +15,7 @@ offshore_path = "/Users/zeinsadek/Desktop/Experiments/Offshore";
 power_path = fullfile(offshore_path, "Power/Data/Matfiles");
 
 turbine_type = 'FWF';
-farm_arrangement = "Staggered";
+farm_arrangement = "Inline";
 turbines = 1:12;
 
 % Name depending on farm type
