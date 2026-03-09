@@ -60,7 +60,16 @@ for s = 1:length(farm_spacings)
         tmp = load(power_file);
         power.(farm_spacing).(wave) = tmp.output;
     end
+
+
+    % Load no-wave powers
+    power_file = fullfile(power_path, strcat(turbine_type, "_", farm_arrangement), caze, strcat("LM0_AK00.mat"));
+    tmp = load(power_file);
+    power.(farm_spacing).("LM0_AK00") = tmp.output;
+
 end
+
+
 
 clear w wave tmp power_file farm_spacing caze
 
@@ -71,11 +80,11 @@ for s = 1:length(farm_spacings)
     caze = strcat("WT60_", farm_spacing, "_AG0");
     fprintf('%s\n', caze)
 
-    for w = 1:length(waves)
-        wave = waves{w};
+    cases = fields(power.(farm_spacing));
+    for w = 1:length(cases)
+        wave = cases{w};
 
         for t = 1:length(turbines)
-            % turbine = turbines(t);
             power.(farm_spacing).(wave)(t).Power = fillmissing(power.(farm_spacing).(wave)(t).Power, 'spline');
         end
     end
@@ -117,7 +126,20 @@ for s = 1:length(farm_spacings)
             end
         end
     end
+
+
+    % Loop through no waves
+    for t = 1:length(turbines)
+        wave = "LM0_AK00";
+        % Compute standard deviation
+        deviations.(farm_spacing)(t).(wave) = std(power.(farm_spacing).(wave)(t).Power, 0, 'all', 'omitnan');
+
+        if isnan(deviations.(farm_spacing)(t).(wave))
+            fprintf('%s: %s Turbine %2.0f\n', caze, wave, t)
+        end
+    end
 end
+
 
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -136,12 +158,23 @@ for s = 1:length(farm_spacings)
 
         % Loop through turbines
         for t = 1:length(turbines)
-            % Compute standard deviation
+            % Compute means
             averages.(farm_spacing)(t).(wave) = mean(power.(farm_spacing).(wave)(t).Power, 'all', 'omitnan');
 
             if isnan(deviations.(farm_spacing)(t).(wave))
                 fprintf('%s: %s Turbine %2.0f\n', caze, wave, t)
             end
+        end
+    end
+
+    % Loop through no waves
+    for t = 1:length(turbines)
+        wave = "LM0_AK00";
+        % Compute means
+        averages.(farm_spacing)(t).(wave) = mean(power.(farm_spacing).(wave)(t).Power, 'all', 'omitnan');
+
+        if isnan(deviations.(farm_spacing)(t).(wave))
+            fprintf('%s: %s Turbine %2.0f\n', caze, wave, t)
         end
     end
 end
@@ -157,7 +190,9 @@ end
 % 2. Bands are perfectly contiguous: [0, 0.5*fw], [0.5*fw, 1.5*fw], [1.5*fw, Fs/2]
 % 3. This ensures sum of squared RMS values = total variance
 
-Fs = 30;
+time = power.SX50.LM5_AK12(1).Time;
+Fs = 1 / mean(diff(time), 'all', 'omitnan');
+% Fs = 30;
 
 clc;
 fprintf('Computing band-limited RMS using FFT method...\n\n');
@@ -245,7 +280,7 @@ fprintf('Squared full STD:      %.6f\n', total_squared);
 fprintf('\nRatio (should be ~1.0): %.6f\n', ss / total_squared);
 
 
-%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CHECK ALL CASES - Find worst closure errors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -525,6 +560,115 @@ end
 % Represents the percentage of the energy contained in this band, and varys
 % from 0 to 1
 
+% clc;
+% wavelengths = [5,4,3,2];
+% wave_steepnesses = [0.06, 0.09, 0.12];
+% centers = [2, 5, 8 ,11];
+% 
+% steepness_alpha = [0.3, 0.6, 1];
+% sz = 100;
+% spacing_shapes = {'o', 'diamond', '^', 'v', 'square'};
+% 
+% 
+% % Colors per row
+% row_colors.Row1 = flipud(slanCM(31, 2 * length(wavelengths)));
+% row_colors.Row2 = flipud(slanCM(48, 2 * length(wavelengths)));
+% row_colors.Row3 = flipud(slanCM(34, 2 * length(wavelengths)));
+% row_colors.Row4 = flipud(slanCM(35, 2 * length(wavelengths)));
+% 
+% % Loop
+% clc; close all
+% figure('color','white')
+% t = tiledlayout(1, length(centers));
+% sgtitle(sprintf('%s %s: All Rows Power STD', farm_arrangement, fancy_name), 'Interpreter', 'latex')
+% 
+% 
+% for c = 1:length(centers)
+%     turbine = centers(c);
+%     row_tag = sprintf('Row%1.0f', ceil(turbine/3));
+%     colors = row_colors.(row_tag);
+% 
+%     h(c) = nexttile;
+%     hold on
+%     title(row_tag)
+%     for st = 1:length(wave_steepnesses)
+%         wave_steepness = wave_steepnesses(st);
+%         steep = compose('%02d', round(100 * wave_steepness));
+%         disp(steep{1})
+% 
+%         for s = 1:length(farm_spacings)
+%             farm_spacing = ['SX', num2str(farm_spacings(s) * 10)];
+%             caze = strcat("WT60_", farm_spacing, "_AG0");
+%             fprintf('%s\n', caze)
+% 
+%             for w = 1:length(wavelengths)
+%                 wave = ['LM', num2str(wavelengths(w)), '_AK', steep{1}];
+%                 harmonic_ratio = farm_spacings(s) / wavelengths(w);
+% 
+%                 scatter(harmonic_ratio, deviations.(farm_spacing)(turbine).(wave), sz, spacing_shapes{s}, 'filled', ...
+%                         'MarkerFaceColor', colors(w, :), 'MarkerFaceAlpha', steepness_alpha(st), ...
+%                         'HandleVisibility', 'off')
+%             end
+%         end
+%     end
+% 
+% 
+% 
+%     %%% Legend
+%     % Legend for color
+%     for w = 1:length(wavelengths)
+%         plot(nan, nan, 'Color', colors(w,:), 'linewidth', 3, ...
+%             'Displayname', sprintf('$\\lambda = %1.0fD$', wavelengths(w)), 'HandleVisibility', 'on')
+%     end
+% 
+%     hold off
+%     legend('location', 'northeast', 'interpreter', 'latex', 'box', 'off', 'fontsize', 6)
+%     xlabel('$S_x / \lambda$', 'Interpreter','latex')
+%     ylabel('$\sigma$ [mW]', 'interpreter', 'latex')
+%     xlim([0.5, 2.6])
+%     ylim([0, 30])
+% 
+% 
+%     % % White space
+%     % plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+%     % plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+% 
+% end
+
+
+% % Legend for marker shape
+% for s = 1:length(farm_spacings)
+%     scatter(nan, nan, sz, spacing_shapes{s}, 'black', 'filled', 'HandleVisibility', 'on', ...
+%             'DisplayName', sprintf('$S_x = %1.1fD', farm_spacings(s)))
+% end
+% 
+% % White space
+% plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+% plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+% 
+% % Legend for marker alpha
+% for st = 1:length(wave_steepnesses)
+%     scatter(nan, nan, sz, 'o', 'black', 'filled', 'HandleVisibility', 'on', ...
+%             'markerfacealpha', steepness_alpha(st), ...
+%             'Displayname', sprintf('$ak = %1.2f$', wave_steepnesses(st)))
+% end
+% 
+% legend('interpreter', 'latex', 'box', 'off', 'location', 'eastoutside');
+% hold off
+
+
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PLOTTING STD OF POWER SIGAL AGAINST SPACING
+% LOOPED FOR ALL CENTER TURBINES
+% PLOTTED IN A TILED LAYOUT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Plotting here the variance associated with the wave-frequency normalized
+% by the total variance
+% Represents the percentage of the energy contained in this band, and varys
+% from 0 to 1
+
 clc;
 wavelengths = [5,4,3,2];
 wave_steepnesses = [0.06, 0.09, 0.12];
@@ -570,7 +714,7 @@ for c = 1:length(centers)
                 wave = ['LM', num2str(wavelengths(w)), '_AK', steep{1}];
                 harmonic_ratio = farm_spacings(s) / wavelengths(w);
     
-                scatter(harmonic_ratio, deviations.(farm_spacing)(turbine).(wave), sz, spacing_shapes{s}, 'filled', ...
+                scatter(farm_spacings(s), deviations.(farm_spacing)(turbine).(wave), sz, spacing_shapes{s}, 'filled', ...
                         'MarkerFaceColor', colors(w, :), 'MarkerFaceAlpha', steepness_alpha(st), ...
                         'HandleVisibility', 'off')
             end
@@ -590,7 +734,7 @@ for c = 1:length(centers)
     legend('location', 'northeast', 'interpreter', 'latex', 'box', 'off', 'fontsize', 6)
     xlabel('$S_x / \lambda$', 'Interpreter','latex')
     ylabel('$\sigma$ [mW]', 'interpreter', 'latex')
-    xlim([0.5, 2.6])
+    xlim([2.8, 5.2])
     ylim([0, 30])
 
     
@@ -624,6 +768,115 @@ end
 
 
 
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PLOTTING STD OF POWER SIGAL AGAINST SPACING
+% NORMALIZING BY NO-WAVE STD
+% LOOPED FOR ALL CENTER TURBINES
+% PLOTTED IN A TILED LAYOUT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Plotting here the variance associated with the wave-frequency normalized
+% by the total variance
+% Represents the percentage of the energy contained in this band, and varys
+% from 0 to 1
+
+clc;
+wavelengths = [5,4,3,2];
+wave_steepnesses = [0.06, 0.09, 0.12];
+centers = [2, 5, 8 ,11];
+
+steepness_alpha = [0.3, 0.6, 1];
+sz = 100;
+spacing_shapes = {'o', 'diamond', '^', 'v', 'square'};
+
+
+% Colors per row
+row_colors.Row1 = flipud(slanCM(31, 2 * length(wavelengths)));
+row_colors.Row2 = flipud(slanCM(48, 2 * length(wavelengths)));
+row_colors.Row3 = flipud(slanCM(34, 2 * length(wavelengths)));
+row_colors.Row4 = flipud(slanCM(35, 2 * length(wavelengths)));
+
+% Loop
+clc; close all
+figure('color','white')
+t = tiledlayout(1, length(centers));
+sgtitle(sprintf('%s %s: All Rows Power STD', farm_arrangement, fancy_name), 'Interpreter', 'latex')
+
+
+for c = 1:length(centers)
+    turbine = centers(c);
+    row_tag = sprintf('Row%1.0f', ceil(turbine/3));
+    colors = row_colors.(row_tag);
+
+    h(c) = nexttile;
+    hold on
+    title(row_tag)
+    for st = 1:length(wave_steepnesses)
+        wave_steepness = wave_steepnesses(st);
+        steep = compose('%02d', round(100 * wave_steepness));
+        disp(steep{1})
+        
+        for s = 1:length(farm_spacings)
+            farm_spacing = ['SX', num2str(farm_spacings(s) * 10)];
+            caze = strcat("WT60_", farm_spacing, "_AG0");
+            fprintf('%s\n', caze)
+        
+            for w = 1:length(wavelengths)
+                wave = ['LM', num2str(wavelengths(w)), '_AK', steep{1}];
+                harmonic_ratio = farm_spacings(s) / wavelengths(w);
+    
+                scatter(farm_spacings(s), (deviations.(farm_spacing)(turbine).(wave) / deviations.(farm_spacing)(turbine).("LM0_AK00")) - 1, sz, spacing_shapes{s}, 'filled', ...
+                        'MarkerFaceColor', colors(w, :), 'MarkerFaceAlpha', steepness_alpha(st), ...
+                        'HandleVisibility', 'off')
+            end
+        end
+    end
+    
+    
+    
+    %%% Legend
+    % Legend for color
+    for w = 1:length(wavelengths)
+        plot(nan, nan, 'Color', colors(w,:), 'linewidth', 3, ...
+            'Displayname', sprintf('$\\lambda = %1.0fD$', wavelengths(w)), 'HandleVisibility', 'on')
+    end
+
+    hold off
+    legend('location', 'northeast', 'interpreter', 'latex', 'box', 'off', 'fontsize', 6)
+    xlabel('$S_x / D$', 'Interpreter','latex')
+    ylabel('$\sigma / \sigma_{no wave} - 1$', 'interpreter', 'latex')
+    xlim([2.8, 5.2])
+    ylim([-1, 1])
+    yline(0, 'LineStyle', '--', 'color', 'black', 'alpha', 0.5, 'linewidth', 1, 'HandleVisibility', 'off')
+
+    
+    % % White space
+    % plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+    % plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+    
+end
+
+linkaxes(h, 'xy')
+
+% % Legend for marker shape
+% for s = 1:length(farm_spacings)
+%     scatter(nan, nan, sz, spacing_shapes{s}, 'black', 'filled', 'HandleVisibility', 'on', ...
+%             'DisplayName', sprintf('$S_x = %1.1fD', farm_spacings(s)))
+% end
+% 
+% % White space
+% plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+% plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+% 
+% % Legend for marker alpha
+% for st = 1:length(wave_steepnesses)
+%     scatter(nan, nan, sz, 'o', 'black', 'filled', 'HandleVisibility', 'on', ...
+%             'markerfacealpha', steepness_alpha(st), ...
+%             'Displayname', sprintf('$ak = %1.2f$', wave_steepnesses(st)))
+% end
+% 
+% legend('interpreter', 'latex', 'box', 'off', 'location', 'eastoutside');
+% hold off
 
 
 
@@ -654,6 +907,7 @@ wave_colors = {'#EC4E20', '#FF9505', '#4C4B63', '#ABA8B2'};
 
 row_tag = sprintf('Row%1.0f', ceil(turbine/3));
 colors = row_colors.(row_tag);
+
 
 clc; close all
 figure('color','white')
@@ -753,7 +1007,264 @@ linkaxes(h, 'xy')
 
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PLOTTING AGAINST SPACING: ALL STEEPNESSES
+% LOOPED OVER ALL THREE COMPONENTS
+% FOR A SINGLE ROW
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Plotting here the variance associated with the wave-frequency normalized
+% by the total variance
+% Represents the percentage of the energy contained in this band, and varys
+% from 0 to 1
+
+clc;
+wavelengths = [5,4,3,2];
+wave_steepnesses = [0.06, 0.09, 0.12];
+turbine = 8;
+freqs = {'LF', 'WF', 'HF'};
+
+steepness_alpha = [0.3, 0.6, 1];
+sz = 100;
+spacing_shapes = {'o', 'diamond', '^', 'v', 'square'};
+wave_colors = {'#EC4E20', '#FF9505', '#4C4B63', '#ABA8B2'};
+
+row_tag = sprintf('Row%1.0f', ceil(turbine/3));
+colors = row_colors.(row_tag);
+
+
+clc; close all
+figure('color','white')
+tiledlayout(1, length(freqs))
+sgtitle(sprintf('%s %s: Row %1.0f Power, Partitioned RMS', farm_arrangement, fancy_name, ceil(turbine / 3)), 'Interpreter', 'latex')
+
+for f = 1:length(freqs)
+    disp(f)
+    freq = freqs{f};
+
+    % Titles based on frequency
+    if strcmp(freq, 'LF')
+        freq_name = 'Low Frequency';
+    elseif strcmp(freq, 'WF')
+        freq_name = 'Wave Frequency';
+    elseif strcmp(freq, 'HF')
+        freq_name = 'High Frequency';
+    end
+  
+    % Plotting
+    clc; clear tmp
+    % title(sprintf('%s: $\\sigma_{%s}$ %s', name, symb, units), 'interpreter', 'latex', 'fontsize', 14)
+    h(f) = nexttile;
+    title(freq_name)
+    hold on 
+    for st = 1:length(wave_steepnesses)
+        wave_steepness = wave_steepnesses(st);
+        steep = compose('%02d', round(100 * wave_steepness));
+        disp(steep{1})
+        
+        for s = 1:length(farm_spacings)
+            farm_spacing = ['SX', num2str(farm_spacings(s) * 10)];
+            caze = strcat("WT60_", farm_spacing, "_AG0");
+            fprintf('%s\n', caze)
+        
+            for w = 1:length(wavelengths)
+                wave = ['LM', num2str(wavelengths(w)), '_AK', steep{1}];
+                harmonic_ratio = farm_spacings(s) / wavelengths(w);
+    
+                total_variance = deviations.(farm_spacing)(turbine).(wave)^2;
+                wave_band_variance = bandfilteredDeviations.(farm_spacing).(wave)(turbine).(freq)^2;
+                wave_score = wave_band_variance ./ total_variance;
+    
+                scatter(farm_spacings(s), wave_score, sz, spacing_shapes{s}, 'filled', ...
+                        'MarkerFaceColor', colors(w,:), 'MarkerFaceAlpha', steepness_alpha(st), ...
+                        'HandleVisibility', 'off')
+            end
+        end
+    end
+    
+    
+    if f == 3
+        %%% Legend
+        % Legend for color
+        for w = 1:length(wavelengths)
+            plot(nan, nan, 'Color', colors(w,:), 'linewidth', 3, ...
+                'Displayname', sprintf('$\\lambda = %1.0fD$', wavelengths(w)), 'HandleVisibility', 'on')
+        end
+        
+        % White space
+        plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+        plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+        
+        % Legend for marker shape
+        for s = 1:length(farm_spacings)
+            scatter(nan, nan, sz, spacing_shapes{s}, 'black', 'filled', 'HandleVisibility', 'on', ...
+                    'DisplayName', sprintf('$S_x = %1.1fD', farm_spacings(s)))
+        end
+        
+        % White space
+        plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+        plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+        
+        % Legend for marker alpha
+        for st = 1:length(wave_steepnesses)
+            scatter(nan, nan, sz, 'o', 'black', 'filled', 'HandleVisibility', 'on', ...
+                    'markerfacealpha', steepness_alpha(st), ...
+                    'Displayname', sprintf('$ak = %1.2f$', wave_steepnesses(st)))
+        end
+        
+        legend('interpreter', 'latex', 'box', 'off', 'location', 'eastoutside');
+    end
+    hold off
+    
+    xlabel('$S_x / D$', 'Interpreter','latex')
+    ylabel(sprintf('$\\sigma_{%s}^2 / \\sigma^2$', freq), 'interpreter', 'latex')
+    xlim([2.8, 5.2])
+    ylim([0, 1])
+end
+
+linkaxes(h, 'xy')
+
+
+
+
+
+
+
+
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % PLOTTING AGAINST HARMONIC RATIO: ALL STEEPNESSES
+% LOOPED OVER ALL THREE COMPONENTS
+% LOOPED FOR ALL CENTER TURBINES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% % Plotting here the variance associated with the wave-frequency normalized
+% % by the total variance
+% % Represents the percentage of the energy contained in this band, and varys
+% % from 0 to 1
+% 
+% clc;
+% wavelengths = [5,4,3,2];
+% wave_steepnesses = [0.06, 0.09, 0.12];
+% turbine = 8;
+% freqs = {'LF', 'WF', 'HF'};
+% 
+% steepness_alpha = [0.3, 0.6, 1];
+% sz = 100;
+% spacing_shapes = {'o', 'diamond', '^', 'v', 'square'};
+% wave_colors = {'#EC4E20', '#FF9505', '#4C4B63', '#ABA8B2'};
+% 
+% 
+% centers = [2,5,8,11];
+% 
+% 
+% clc; close all
+% figure('color','white')
+% tiledlayout(length(centers), length(freqs))
+% sgtitle(sprintf('%s %s: Power, Partitioned RMS', farm_arrangement, fancy_name), 'Interpreter', 'latex')
+% 
+% 
+% for c = 1:length(centers)
+%     turbine = centers(c);
+%     row_tag = sprintf('Row%1.0f', ceil(turbine/3));
+%     colors = row_colors.(row_tag);
+% 
+% 
+% 
+%     for f = 1:length(freqs)
+%         disp(f)
+%         freq = freqs{f};
+% 
+%         % Titles based on frequency
+%         if strcmp(freq, 'LF')
+%             freq_name = 'Low Frequency';
+%         elseif strcmp(freq, 'WF')
+%             freq_name = 'Wave Frequency';
+%         elseif strcmp(freq, 'HF')
+%             freq_name = 'High Frequency';
+%         end
+% 
+%         % Plotting
+%         clc; clear tmp
+%         % title(sprintf('%s: $\\sigma_{%s}$ %s', name, symb, units), 'interpreter', 'latex', 'fontsize', 14)
+%         h(f) = nexttile;
+%         title(sprintf('Row %1.0f: %s', c, freq_name))
+%         hold on 
+%         for st = 1:length(wave_steepnesses)
+%             wave_steepness = wave_steepnesses(st);
+%             steep = compose('%02d', round(100 * wave_steepness));
+%             disp(steep{1})
+% 
+%             for s = 1:length(farm_spacings)
+%                 farm_spacing = ['SX', num2str(farm_spacings(s) * 10)];
+%                 caze = strcat("WT60_", farm_spacing, "_AG0");
+%                 fprintf('%s\n', caze)
+% 
+%                 for w = 1:length(wavelengths)
+%                     wave = ['LM', num2str(wavelengths(w)), '_AK', steep{1}];
+%                     harmonic_ratio = farm_spacings(s) / wavelengths(w);
+% 
+%                     total_variance = deviations.(farm_spacing)(turbine).(wave)^2;
+%                     wave_band_variance = bandfilteredDeviations.(farm_spacing).(wave)(turbine).(freq)^2;
+%                     % wave_band_variance = bandfilteredDeviations.(farm_spacing).(wave)(turbine).(freq)^2;
+%                     wave_score = wave_band_variance ./ total_variance;
+% 
+%                     scatter(harmonic_ratio, wave_score, sz, spacing_shapes{s}, 'filled', ...
+%                             'MarkerFaceColor', colors(w,:), 'MarkerFaceAlpha', steepness_alpha(st), ...
+%                             'HandleVisibility', 'off')
+%                 end
+%             end
+%         end
+% 
+% 
+%         %%% LEGEND
+%         % if f == 3
+%         %     %%% Legend
+%         %     % Legend for color
+%         %     for w = 1:length(wavelengths)
+%         %         plot(nan, nan, 'Color', colors(w,:), 'linewidth', 3, ...
+%         %             'Displayname', sprintf('$\\lambda = %1.0fD$', wavelengths(w)), 'HandleVisibility', 'on')
+%         %     end
+%         % 
+%         %     % White space
+%         %     plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+%         %     plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+%         % 
+%         %     % Legend for marker shape
+%         %     for s = 1:length(farm_spacings)
+%         %         scatter(nan, nan, sz, spacing_shapes{s}, 'black', 'filled', 'HandleVisibility', 'on', ...
+%         %                 'DisplayName', sprintf('$S_x = %1.1fD', farm_spacings(s)))
+%         %     end
+%         % 
+%         %     % White space
+%         %     plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+%         %     plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+%         % 
+%         %     % Legend for marker alpha
+%         %     for st = 1:length(wave_steepnesses)
+%         %         scatter(nan, nan, sz, 'o', 'black', 'filled', 'HandleVisibility', 'on', ...
+%         %                 'markerfacealpha', steepness_alpha(st), ...
+%         %                 'Displayname', sprintf('$ak = %1.2f$', wave_steepnesses(st)))
+%         %     end
+%         % 
+%         %     legend('interpreter', 'latex', 'box', 'off', 'location', 'eastoutside');
+%         % end
+%         hold off
+% 
+%         xlabel('$S_x / \lambda$', 'Interpreter','latex')
+%         ylabel(sprintf('$\\sigma_{%s}^2 / \\sigma^2$', freq), 'interpreter', 'latex')
+%         xlim([0.5, 2.6])
+%         ylim([0, 1])
+%     end
+% end
+% 
+% linkaxes(h, 'xy')
+
+
+
+
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PLOTTING AGAINST SPACING: ALL STEEPNESSES
 % LOOPED OVER ALL THREE COMPONENTS
 % LOOPED FOR ALL CENTER TURBINES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -788,8 +1299,6 @@ for c = 1:length(centers)
     turbine = centers(c);
     row_tag = sprintf('Row%1.0f', ceil(turbine/3));
     colors = row_colors.(row_tag);
-
-
 
     for f = 1:length(freqs)
         disp(f)
@@ -826,10 +1335,9 @@ for c = 1:length(centers)
         
                     total_variance = deviations.(farm_spacing)(turbine).(wave)^2;
                     wave_band_variance = bandfilteredDeviations.(farm_spacing).(wave)(turbine).(freq)^2;
-                    % wave_band_variance = bandfilteredDeviations.(farm_spacing).(wave)(turbine).(freq)^2;
                     wave_score = wave_band_variance ./ total_variance;
         
-                    scatter(harmonic_ratio, wave_score, sz, spacing_shapes{s}, 'filled', ...
+                    scatter(farm_spacings(s), wave_score, sz, spacing_shapes{s}, 'filled', ...
                             'MarkerFaceColor', colors(w,:), 'MarkerFaceAlpha', steepness_alpha(st), ...
                             'HandleVisibility', 'off')
                 end
@@ -871,9 +1379,9 @@ for c = 1:length(centers)
         % end
         hold off
         
-        xlabel('$S_x / \lambda$', 'Interpreter','latex')
+        xlabel('$S_x / D$', 'Interpreter','latex')
         ylabel(sprintf('$\\sigma_{%s}^2 / \\sigma^2$', freq), 'interpreter', 'latex')
-        xlim([0.5, 2.6])
+        xlim([2.8, 5.2])
         ylim([0, 1])
     end
 end
@@ -881,6 +1389,133 @@ end
 linkaxes(h, 'xy')
 
 
+
+
+
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% HIGH/LOW BLANACE AGAINST SPACING: ALL STEEPNESSES
+% LOOPED OVER ALL THREE COMPONENTS
+% LOOPED FOR ALL CENTER TURBINES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Plotting here the variance associated with the wave-frequency normalized
+% by the total variance
+% Represents the percentage of the energy contained in this band, and varys
+% from 0 to 1
+
+clc;
+wavelengths = [5,4,3,2];
+wave_steepnesses = [0.06, 0.09, 0.12];
+turbine = 8;
+
+steepness_alpha = [0.3, 0.6, 1];
+sz = 100;
+spacing_shapes = {'o', 'diamond', '^', 'v', 'square'};
+wave_colors = {'#EC4E20', '#FF9505', '#4C4B63', '#ABA8B2'};
+
+
+centers = [2,5,8,11];
+
+
+clc; close all
+figure('color','white')
+tiledlayout(1, length(centers))
+sgtitle(sprintf('%s %s: Power, Partitioned RMS', farm_arrangement, fancy_name), 'Interpreter', 'latex')
+
+
+for c = 1:length(centers)
+    turbine = centers(c);
+    row_tag = sprintf('Row%1.0f', ceil(turbine/3));
+    colors = row_colors.(row_tag);
+
+    % Titles based on frequency
+    if strcmp(freq, 'LF')
+        freq_name = 'Low Frequency';
+    elseif strcmp(freq, 'WF')
+        freq_name = 'Wave Frequency';
+    elseif strcmp(freq, 'HF')
+        freq_name = 'High Frequency';
+    end
+  
+    % Plotting
+    clc; clear tmp
+    h(f) = nexttile;
+    title(sprintf('Row %1.0f', c))
+    hold on 
+    for st = 1:length(wave_steepnesses)
+        wave_steepness = wave_steepnesses(st);
+        steep = compose('%02d', round(100 * wave_steepness));
+        disp(steep{1})
+        
+        for s = 1:length(farm_spacings)
+            farm_spacing = ['SX', num2str(farm_spacings(s) * 10)];
+            caze = strcat("WT60_", farm_spacing, "_AG0");
+            fprintf('%s\n', caze)
+        
+            for w = 1:length(wavelengths)
+                wave = ['LM', num2str(wavelengths(w)), '_AK', steep{1}];
+                harmonic_ratio = farm_spacings(s) / wavelengths(w);
+    
+                total_variance = deviations.(farm_spacing)(turbine).(wave)^2;
+                high_wave_band_variance = bandfilteredDeviations.(farm_spacing).(wave)(turbine).HF^2;
+                low_wave_band_variance = bandfilteredDeviations.(farm_spacing).(wave)(turbine).LF^2;
+                high_wave_score = high_wave_band_variance ./ total_variance;
+                low_wave_score = low_wave_band_variance ./ total_variance;
+
+                high_low_balance = (high_wave_score - low_wave_score) / (high_wave_score + low_wave_score);
+
+                scatter(farm_spacings(s), high_low_balance, sz, spacing_shapes{s}, 'filled', ...
+                        'MarkerFaceColor', colors(w,:), 'MarkerFaceAlpha', steepness_alpha(st), ...
+                        'HandleVisibility', 'off')
+            end
+        end
+    end
+    
+    
+    %%% LEGEND
+    % if f == 3
+    %     %%% Legend
+    %     % Legend for color
+    %     for w = 1:length(wavelengths)
+    %         plot(nan, nan, 'Color', colors(w,:), 'linewidth', 3, ...
+    %             'Displayname', sprintf('$\\lambda = %1.0fD$', wavelengths(w)), 'HandleVisibility', 'on')
+    %     end
+    % 
+    %     % White space
+    %     plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+    %     plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+    % 
+    %     % Legend for marker shape
+    %     for s = 1:length(farm_spacings)
+    %         scatter(nan, nan, sz, spacing_shapes{s}, 'black', 'filled', 'HandleVisibility', 'on', ...
+    %                 'DisplayName', sprintf('$S_x = %1.1fD', farm_spacings(s)))
+    %     end
+    % 
+    %     % White space
+    %     plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+    %     plot(nan, nan, 'color', 'white', 'HandleVisibility', 'on', 'displayname', '')
+    % 
+    %     % Legend for marker alpha
+    %     for st = 1:length(wave_steepnesses)
+    %         scatter(nan, nan, sz, 'o', 'black', 'filled', 'HandleVisibility', 'on', ...
+    %                 'markerfacealpha', steepness_alpha(st), ...
+    %                 'Displayname', sprintf('$ak = %1.2f$', wave_steepnesses(st)))
+    %     end
+    % 
+    %     legend('interpreter', 'latex', 'box', 'off', 'location', 'eastoutside');
+    % end
+    hold off
+    
+    xlabel('$S_x / D$', 'Interpreter','latex')
+    % ylabel(sprintf('$\\sigma_{%s}^2 / \\sigma^2$', freq), 'interpreter', 'latex')
+    ylabel('$\sigma_{HF}^2 - \sigma_{LF}^2 / \sigma_{HF}^2 + \sigma_{LF}^2$', 'interpreter', 'latex')
+    xlim([2.8, 5.2])
+    ylim([-1, 1])
+
+end
+
+linkaxes(h, 'xy')
 
 
 
