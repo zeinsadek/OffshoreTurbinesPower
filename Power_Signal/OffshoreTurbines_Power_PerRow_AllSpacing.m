@@ -8,7 +8,7 @@ figure_folder = fullfile(main_folder, "Figures");
 mat_folder    = fullfile(main_folder, "Data", "Matfiles");
 
 turbine_type = 'FWF';
-farm_arrangement = 'Staggered';
+farm_arrangement = 'Inline';
 
 % Make fancy name for farm type
 if strcmp(turbine_type, 'FWF')
@@ -17,7 +17,6 @@ elseif strcmp(turbine_type, 'FBF')
     fancy_name = ['Fixed-Bottom Wind Farm: ', farm_arrangement];
 end
 
-% farm_spacing = 'SX50';
 farm_spacings = [5, 4.5, 4, 3.5, 3];
 
 waves_steepness = 0.12;
@@ -145,7 +144,7 @@ xlabel(t, 'Turbine Row', 'interpreter', 'latex')
 
 %% Grouped bars: spacing on x, wave cases as grouped bars
 
-row_to_plot = 2;
+row_to_plot = 1;
 offset = 0.015;          % vertical offset above bar
 min_show = 0.5;            % only annotate if |Δ| > min_show %
 
