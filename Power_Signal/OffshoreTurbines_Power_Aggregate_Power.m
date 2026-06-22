@@ -6,16 +6,19 @@ main_folder   = "/Users/zeinsadek/Desktop/Experiments/Offshore/Power";
 figure_folder = fullfile(main_folder, "Figures");
 mat_folder    = fullfile(main_folder, "Data", "Matfiles");
 
-turbine_type = 'FWF';
+turbine_type = 'FBF';
 farm_arrangement = 'Inline';
 farm_spacing = 'SX50';
 
+% wave_cases = {'LM0_AK00',...
+%               'LM5_AK12',...
+%               'LM4_AK12',...
+%               'LM33_AK12',...
+%               'LM25_AK12'};
+
 wave_cases = {'LM0_AK00',...
               'LM5_AK12',...
-              'LM4_AK12',...
-              'LM33_AK12',...
-              'LM25_AK12'};
-
+              'LM33_AK12'};
 
 %% Load No Waves to Normalize
 
@@ -62,10 +65,11 @@ clear data center row_data
 
 ax = figure('color', 'white');
 bar(["Row 1"; "Row 2"; "Row 3"; "Row 4"], norm_powers)
-legend('No Waves', '$H = 1.0$', '$H = 1.25$', '$H = 1.5$', '$H = 2.0$', 'Interpreter', 'latex')
+% legend('No Waves', '$H = 1.0$', '$H = 1.25$', '$H = 1.5$', '$H = 2.0$', 'Interpreter', 'latex')
+legend('No Waves', '$H = 1.0$', '$H = 1.5$', 'Interpreter', 'latex')
 ylim([0, 1.1])
 ylabel('$\bar{P} / \bar{P}_{Row 1, No Waves}$', 'Interpreter', 'latex')
-title(farm_spacing)
+% title(farm_spacing)
 % exportgraphics(ax, fullfile(figure_folder, 'Relative_Normalized_Power.png'), 'Resolution', 200)
 
 %% Power for Only Row 3
@@ -95,7 +99,8 @@ summed_power = summed_power / summed_power(1,1);
 % Plot
 clc; close all
 ax = figure('Position', [200,200,300,500], 'color', 'white');
-b = bar(["No Waves", "H = 1.0", "H = 1.25", "H = 1.5", "H = 2.0"], summed_power);
+% b = bar(["No Waves", "H = 1.0", "H = 1.25", "H = 1.5", "H = 2.0"], summed_power);
+b = bar(["No Waves", "H = 1.0", "H = 1.5"], summed_power);
 
 % Label value on top of chart
 b(1).Labels = round(b(1).YData, 3);

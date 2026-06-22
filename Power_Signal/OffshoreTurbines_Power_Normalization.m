@@ -2,6 +2,7 @@
 
 clear; close all; clc;
 
+addpath('/Users/zeinsadek/Documents/MATLAB/colormaps/slanCM')
 main_folder   = "/Users/zeinsadek/Desktop/Experiments/Offshore/Power";
 figure_folder = fullfile(main_folder, "Figures");
 mat_folder    = fullfile(main_folder, "Data", "Matfiles");
@@ -145,7 +146,6 @@ clear tmp_row_averaged_power tmp_row_power turbine turbine_rows turbines_in_row
 %% Plot mean turbine powers to see if there are bad ones
 
 clc;
-% turbine_type = 'FBF';
 farm_arrangement = 'Inline';
 farm_spacing = 'SX50';
 wave = 'LM0_AK00';
@@ -164,91 +164,92 @@ ylabel('Power [mW]')
 legend('location', 'northeast', 'box', 'off')
 
 
+
+
 %% Average across rows
-
-% Turbines per row
-% row_map.Inline =    {[1 2 3], [4 5 6], [7 8 9], [10 11 12]};
-% row_map.Staggered = {[1 2 3], [4 5], [6 7 8], [9 10]};
-
-% Average over specific turbines since some of them are fucked up
-% Fixed-bottom
-row_map.FBF.Inline    = {[3],   [4 5 6], [7 8 9], [10 11]};
-row_map.FBF.Staggered = {[3],   [4 5],   [7 8],   [9 10]};
-
-% Floating
-row_map.FWF.Inline    = {[2 3], [4 5 6], [7 8 9], [10 11]};
-row_map.FWF.Staggered = {[2 3], [4 5],   [7 8],   [10]};
-
-
-clc;
-% Loop over turbine types
-for tt = 1:2
-    turbine_type = turbine_types{tt};
-
-    % Loop over farm layouts
-    for l = 1:2
-        farm_arrangement = farm_arrangements{l};
-        turbine_rows = row_map.(turbine_type).(farm_arrangement);
-
-        % Loop over farm spacings
-        for sp = 1:length(farm_spacings)
-            farm_spacing = ['SX', num2str(farm_spacings(sp) * 10)];
-            waves = wave_cases.(turbine_type).(farm_arrangement).(farm_spacing).wave_cases;
-            fprintf('%s: %s, %s\n', turbine_type, farm_arrangement, farm_spacing)
-
-            % Loop over waves
-            for w = 1:length(waves)
-                wave = waves{w};
-                disp(wave)
-
-                % Load data
-                data = load(fullfile(mat_folder, strcat(turbine_type, '_', farm_arrangement), strcat('WT60_', farm_spacing, '_AG0'), [wave '.mat']));
-                data = data.output;
-                
-                % Loop through rows
-                tmp_row_averaged_power = nan(1,4);
-                for r = 1:4
-                    num_turbines_in_row = length(turbine_rows{r});
-                    turbines_in_row = turbine_rows{r};
-
-                    % Collect power signals for all turbines in row
-                    tmp_row_power = [];
-                    for t = 1:num_turbines_in_row
-                        turbine = turbines_in_row(t);
-                        tmp_row_power = [tmp_row_power, data(turbine).Power(:).'];
-                    end
-
-                    % Average across row and save to array
-                    tmp_row_averaged_power(r) = mean(tmp_row_power, 'all', 'omitnan');
-
-                end
-
-                % Save average power per row for each case
-                row_mean_power.(turbine_type).(farm_arrangement).(farm_spacing).(wave) = tmp_row_averaged_power;
-           
-            end
-        end
-        fprintf('\n')
-    end
-    fprintf('\n')
-end
-% clear sp farm_spacing waves w wave tt turbine_type l farm_arrangement data num_turbines_in_row r t
-% clear tmp_row_averaged_power tmp_row_power turbine turbine_rows turbines_in_row 
-
-
-%% Plot to see if things make sense
-
-turbine_type = 'FBF';
-farm_arrangement = 'Inline';
-farm_spacing = 'SX50';
-wave = 'LM2_AK12';
-
-figure('color', 'white')
-hold on
-plot(1:4, row_mean_power.FBF.(farm_arrangement).(farm_spacing).(wave), 'linewidth', 2, 'color', 'red')
-plot(1:4, row_mean_power.FWF.(farm_arrangement).(farm_spacing).(wave), 'linewidth', 2, 'color', 'blue')
-hold off
-ylim([0, 200])
+% 
+% % Turbines per row
+% % row_map.Inline =    {[1 2 3], [4 5 6], [7 8 9], [10 11 12]};
+% % row_map.Staggered = {[1 2 3], [4 5], [6 7 8], [9 10]};
+% 
+% % Average over specific turbines since some of them are fucked up
+% % Fixed-bottom
+% row_map.FBF.Inline    = {[3],   [4 5 6], [7 8 9], [10 11]};
+% row_map.FBF.Staggered = {[3],   [4 5],   [7 8],   [9 10]};
+% 
+% % Floating
+% row_map.FWF.Inline    = {[3], [4 5 6], [7 8 9], [10 11]};
+% row_map.FWF.Staggered = {[3], [4 5],   [7 8],   [10]};
+% 
+% 
+% clc;
+% % Loop over turbine types
+% for tt = 1:2
+%     turbine_type = turbine_types{tt};
+% 
+%     % Loop over farm layouts
+%     for l = 1:2
+%         farm_arrangement = farm_arrangements{l};
+%         turbine_rows = row_map.(turbine_type).(farm_arrangement);
+% 
+%         % Loop over farm spacings
+%         for sp = 1:length(farm_spacings)
+%             farm_spacing = ['SX', num2str(farm_spacings(sp) * 10)];
+%             waves = wave_cases.(turbine_type).(farm_arrangement).(farm_spacing).wave_cases;
+%             fprintf('%s: %s, %s\n', turbine_type, farm_arrangement, farm_spacing)
+% 
+%             % Loop over waves
+%             for w = 1:length(waves)
+%                 wave = waves{w};
+%                 disp(wave)
+% 
+%                 % Load data
+%                 data = load(fullfile(mat_folder, strcat(turbine_type, '_', farm_arrangement), strcat('WT60_', farm_spacing, '_AG0'), [wave '.mat']));
+%                 data = data.output;
+% 
+%                 % Loop through rows
+%                 tmp_row_averaged_power = nan(1,4);
+%                 for r = 1:4
+%                     num_turbines_in_row = length(turbine_rows{r});
+%                     turbines_in_row = turbine_rows{r};
+% 
+%                     % Collect power signals for all turbines in row
+%                     tmp_row_power = [];
+%                     for t = 1:num_turbines_in_row
+%                         turbine = turbines_in_row(t);
+%                         tmp_row_power = [tmp_row_power, data(turbine).Power(:).'];
+%                     end
+% 
+%                     % Average across row and save to array
+%                     tmp_row_averaged_power(r) = mean(tmp_row_power, 'all', 'omitnan');
+% 
+%                 end
+% 
+%                 % Save average power per row for each case
+%                 row_mean_power.(turbine_type).(farm_arrangement).(farm_spacing).(wave) = tmp_row_averaged_power;
+% 
+%             end
+%         end
+%         fprintf('\n')
+%     end
+%     fprintf('\n')
+% end
+% % clear sp farm_spacing waves w wave tt turbine_type l farm_arrangement data num_turbines_in_row r t
+% % clear tmp_row_averaged_power tmp_row_power turbine turbine_rows turbines_in_row 
+% 
+% 
+% %% Plot to see if things make sense
+% 
+% farm_arrangement = 'Inline';
+% farm_spacing = 'SX50';
+% wave = 'LM2_AK12';
+% 
+% figure('color', 'white')
+% hold on
+% plot(1:4, row_mean_power.FBF.(farm_arrangement).(farm_spacing).(wave), 'linewidth', 2, 'color', 'red')
+% plot(1:4, row_mean_power.FWF.(farm_arrangement).(farm_spacing).(wave), 'linewidth', 2, 'color', 'blue')
+% hold off
+% ylim([0, 200])
 
 
 
@@ -263,7 +264,7 @@ ylim([0, 200])
 %   OffshoreTurbines_Power_Normalization.m)
 
 %% ---- USER SETTINGS ----
-plot_turbine_type     = 'FBF';        % 'FBF' or 'FWF'
+plot_turbine_type     = 'FWF';        % 'FBF' or 'FWF'
 plot_farm_arrangement = 'Staggered';     % 'Inline' or 'Staggered'
 plot_farm_spacing     = 'SX50';       % e.g. 'SX50','SX45','SX40','SX35','SX30'
 % -------------------------
@@ -321,58 +322,58 @@ hold off
 
 %% Check for zero avg cases
 
-% Zero mean counter
-zero_counter = 0;
-
-% Total counter
-total_counter = 0;
-
-clc;
-% Loop over turbine types
-for tt = 1:2
-    turbine_type = turbine_types{tt};
-
-    % Loop over farm layouts
-    for l = 1:2
-        farm_arrangement = farm_arrangements{l};
-
-        if strcmp(farm_arrangement, 'Inline')
-            num_turbines = 12;
-        elseif strcmp(farm_arrangement, 'Staggered')
-            num_turbines = 10;
-        end
-
-        % Loop over farm spacings
-        for sp = 1:length(farm_spacings)
-            farm_spacing = ['SX', num2str(farm_spacings(sp) * 10)];
-            waves = wave_cases.(turbine_type).(farm_arrangement).(farm_spacing).wave_cases;
-            fprintf('%s: %s, %s\n', turbine_type, farm_arrangement, farm_spacing)
-
-            % Loop over waves
-            for w = 1:length(waves)
-                wave = waves{w};
-                disp(wave)
-
-                % Loop through turbines
-                tmp_turbine_powers = nan(1, num_turbines);
-                tmp = turbine_mean_power.(turbine_type).(farm_arrangement).(farm_spacing).(wave);
-
-                % Check if value is zero
-                if any(tmp < 1)
-                    disp('XXX')
-                    zero_counter = zero_counter + 1;
-                end
-
-                total_counter = total_counter + (num_turbines);
-
-            end
-        end
-        fprintf('\n')
-    end
-    fprintf('\n')
-end
-clear sp farm_spacing waves w wave tt turbine_type l farm_arrangement data num_turbines_in_row r t
-clear tmp_row_averaged_power tmp_row_power turbine turbine_rows turbines_in_row 
+% % Zero mean counter
+% zero_counter = 0;
+% 
+% % Total counter
+% total_counter = 0;
+% 
+% clc;
+% % Loop over turbine types
+% for tt = 1:2
+%     turbine_type = turbine_types{tt};
+% 
+%     % Loop over farm layouts
+%     for l = 1:2
+%         farm_arrangement = farm_arrangements{l};
+% 
+%         if strcmp(farm_arrangement, 'Inline')
+%             num_turbines = 12;
+%         elseif strcmp(farm_arrangement, 'Staggered')
+%             num_turbines = 10;
+%         end
+% 
+%         % Loop over farm spacings
+%         for sp = 1:length(farm_spacings)
+%             farm_spacing = ['SX', num2str(farm_spacings(sp) * 10)];
+%             waves = wave_cases.(turbine_type).(farm_arrangement).(farm_spacing).wave_cases;
+%             fprintf('%s: %s, %s\n', turbine_type, farm_arrangement, farm_spacing)
+% 
+%             % Loop over waves
+%             for w = 1:length(waves)
+%                 wave = waves{w};
+%                 disp(wave)
+% 
+%                 % Loop through turbines
+%                 tmp_turbine_powers = nan(1, num_turbines);
+%                 tmp = turbine_mean_power.(turbine_type).(farm_arrangement).(farm_spacing).(wave);
+% 
+%                 % Check if value is zero
+%                 if any(tmp < 1)
+%                     disp('XXX')
+%                     zero_counter = zero_counter + 1;
+%                 end
+% 
+%                 total_counter = total_counter + (num_turbines);
+% 
+%             end
+%         end
+%         fprintf('\n')
+%     end
+%     fprintf('\n')
+% end
+% clear sp farm_spacing waves w wave tt turbine_type l farm_arrangement data num_turbines_in_row r t
+% clear tmp_row_averaged_power tmp_row_power turbine turbine_rows turbines_in_row 
 
 
 
@@ -490,4 +491,168 @@ clear sp farm_spacing waves w wave tt turbine_type l farm_arrangement
 clear data tmp_row_averaged_power tmp_row_power tmp_used_turbines tmp_skipped_turbines
 clear candidates good_turbines skipped_turbines turb turbine turbine_rows
 clear r t total_row_averages zero_skipped_count fully_bad_row_count
+
+
+%%
+
+% Plotting a single case
+farm_arrangement = 'Staggered';
+farm_spacing = 'SX50';
+wave = 'LM0_AK00';
+
+figure('color', 'white')
+hold on
+plot(1:4, row_mean_power.FBF.(farm_arrangement).(farm_spacing).(wave) ./ row_mean_power.FBF.(farm_arrangement).(farm_spacing).(wave)(1), 'linewidth', 2, 'color', 'red', 'displayname', 'Fixed-Bottom')
+plot(1:4, row_mean_power.FWF.(farm_arrangement).(farm_spacing).(wave) ./ row_mean_power.FWF.(farm_arrangement).(farm_spacing).(wave)(1), 'linewidth', 2, 'color', 'blue', 'displayname', 'Floating')
+hold off
+ylim([0, 1.3])
+xticks(1:4)
+legend('box', 'off', 'location', 'northeast')
+
+
+
+%% Plot all different wave cases
+
+farm_arrangement = 'Staggered';
+farm_spacing = 'SX30';
+
+waves = wave_cases.FBF.(farm_arrangement).(farm_spacing).wave_cases;
+
+figure('color', 'white')
+title(sprintf('%s Farm, %s', farm_arrangement, farm_spacing))
+hold on
+for w = 1:length(waves)
+    wave = waves{w};
+    plot(1:4, row_mean_power.FBF.(farm_arrangement).(farm_spacing).(wave), 'linewidth', 2, 'color', 'red', 'displayname', 'Fixed-Bottom')
+    plot(1:4, row_mean_power.FWF.(farm_arrangement).(farm_spacing).(wave), 'linewidth', 2, 'color', 'blue', 'displayname', 'Floating')
+end
+hold off
+legend({'Fixed-bottom', 'Floating'}, 'box', 'off', 'location', 'northeast')
+ylim([0, 200])
+xticks(1:4)
+xlabel('Farm Row')
+ylabel('Row Average Power [mW]')
+
+
+
+%% Compare no-wave case
+
+
+farm_spacing = 'SX50';
+wave = 'LM0_AK00';
+
+figure('color', 'white')
+hold on
+% Fixed-bottom
+plot(1:4, row_mean_power.FBF.Inline.(farm_spacing).(wave), 'linestyle', '-', 'linewidth', 2, 'color', 'red', 'displayname', 'Inline Fixed-Bottom')
+plot(1:4, row_mean_power.FBF.Staggered.(farm_spacing).(wave), 'linestyle', '--', 'linewidth', 2, 'color', 'red', 'displayname', 'Staggered Fixed-Bottom')
+
+% Floating
+plot(1:4, row_mean_power.FWF.Inline.(farm_spacing).(wave), 'linestyle', '-', 'linewidth', 2, 'color', 'blue', 'displayname', 'Inline Floating')
+plot(1:4, row_mean_power.FWF.Staggered.(farm_spacing).(wave), 'linestyle', '--', 'linewidth', 2, 'color', 'blue', 'displayname', 'Staggered Floating')
+hold off
+% ylim([0, 1.3])  
+xticks(1:4)
+legend('box', 'off', 'location', 'northeast')
+xlabel('Farm Row')
+ylabel('Row Average Power [mW]')
+
+
+
+%% Plot first row power against wavelength
+
+wavelength_keys.('LM5') = 5;
+wavelength_keys.('LM4') = 4;
+wavelength_keys.('LM3') = 3;
+wavelength_keys.('LM2') = 2;
+wavelength_keys.('LM33') = (5/1.5);
+wavelength_keys.('LM25') = 2.5;
+
+steepness_keys.('AK06') = 0.06;
+steepness_keys.('AK09') = 0.09;
+steepness_keys.('AK12') = 0.12;
+
+steepness_colors.('AK06') = 'red';
+steepness_colors.('AK09') = 'green';
+steepness_colors.('AK12') = 'blue';
+
+% Which farm
+row = 1;
+turbine_type = 'FWF';
+farm_spacing = 'SX50';
+waves = wave_cases.(turbine_type).(farm_arrangement).(farm_spacing).wave_cases;
+
+% Plot
+sz = 50;
+clc; close all
+figure('color', 'white')
+tile = tiledlayout(1,2);
+sgtitle(sprintf('%s, %s', turbine_type, farm_spacing))
+
+% Inline
+farm_arrangement = 'Inline';
+h(1) = nexttile;
+title(farm_arrangement)
+hold on
+for w = 1:length(waves)
+    wave = waves{w};
+    wave_param = split(wave, '_');
+    
+    if ~strcmp(wave_param{1}, 'LM0')
+        wavelength = wavelength_keys.(wave_param{1});
+        color = steepness_colors.(wave_param{2});
+    
+        % No wave-reference
+        no_wave_power = row_mean_power.(turbine_type).(farm_arrangement).(farm_spacing).('LM0_AK00')(row);
+
+        scatter(wavelength, row_mean_power.(turbine_type).(farm_arrangement).(farm_spacing).(wave)(row) ./ no_wave_power, ...
+                sz, 'filled', 'MarkerFacecolor', color, 'HandleVisibility', 'off')
+    end
+end
+hold off
+axis square
+box on
+
+% Staggered
+farm_arrangement = 'Staggered';
+h(2) = nexttile;
+title(farm_arrangement)
+hold on
+for w = 1:length(waves)
+    wave = waves{w};
+    wave_param = split(wave, '_');
+    
+    if ~strcmp(wave_param{1}, 'LM0')
+        wavelength = wavelength_keys.(wave_param{1});
+        color = steepness_colors.(wave_param{2});
+    
+        % No wave-reference
+        no_wave_power = row_mean_power.(turbine_type).(farm_arrangement).(farm_spacing).('LM0_AK00')(row);
+
+        scatter(wavelength, row_mean_power.(turbine_type).(farm_arrangement).(farm_spacing).(wave)(row) ./ no_wave_power, ...
+                sz, 'filled', 'MarkerFacecolor', color, 'HandleVisibility', 'off')
+    end
+end
+axis square
+box on
+
+% Add legend for steepness
+dummy_steepnesses = fields(steepness_colors);
+for i = 1:3
+    scatter(nan, nan, sz, 'filled', 'MarkerFacecolor', steepness_colors.(dummy_steepnesses{i}), ...
+            'Displayname', dummy_steepnesses{i})
+end
+hold off
+
+leg = legend('box', 'off', 'location', 'eastoutside');
+leg.Layout.Tile = 'east';
+
+linkaxes(h, 'xy')
+xlim([1.5, 5.5])
+ylim([0.5, 1.1])
+xlabel(tile, 'Wavelength [D]')
+ylabel(tile, sprintf('Row %1.0f Average Power [mW]', row))
+
+
+
 
