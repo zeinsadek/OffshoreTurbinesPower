@@ -230,7 +230,7 @@ figure('Position', [100, 100, 1200, 500])
 
 farm_spacing = 'SX50';  % 5D spacing
 wave = 'LM5_AK06';      % Example wave condition
-turbines_to_plot = [1, 4, 7, 10];  % Front, mid, rear turbines
+turbines_to_plot = [3, 4, 7, 10];  % Front, mid, rear turbines
 
 plot_count = 0;
 for i = 1:length(turbines_to_plot)
@@ -260,7 +260,7 @@ for i = 1:length(turbines_to_plot)
     if isfield(spectra.(farm_spacing)(t).(wave), 'f_wave')
         f_wave = spectra.(farm_spacing)(t).(wave).f_wave;
         hold on
-        xline(f_wave, 'r--', 'LineWidth', 1.5, 'Label', 'Wave freq')
+        xline(f_wave * [1, 2, 3, 4, 5], 'r--', 'LineWidth', 1.5, 'Label', 'Wave freq')
     end
 end
 
